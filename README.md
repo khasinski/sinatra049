@@ -5,18 +5,24 @@ A Sinatra-style web framework for [Ruby 0.49](https://github.com/ruby/ruby/tree/
 ```ruby
 load("sinatra049.rb")
 
-get("/",            "index")
-get("/hello/:name", "hello")
+class MyApp : Sinatra049
+  def MyApp.new(port)
+    super.init(port)
+  end
 
-def index()
-  html("Home", h1("Hello!") + p("Welcome to 1994."))
+  def index
+    html("Home", h1("Hello!") + p("Welcome to 1994."))
+  end
+
+  def hello
+    html("Hi", h1("Hello, " + params("name") + "!"))
+  end
 end
 
-def hello()
-  html("Hi", h1("Hello, " + params("name") + "!"))
-end
-
-run(8049)
+app = MyApp.new(8049)
+app.get("/",            "index")
+app.get("/hello/:name", "hello")
+app.run()
 ```
 
 ```
@@ -36,69 +42,78 @@ gem install ancient_ruby
 ## Usage
 
 1. Create your app file (see `app.rb` for a full example)
-2. Load the framework: `load("sinatra049.rb")`
-3. Register routes with `get()` / `post()`
-4. Define handler functions that return HTML strings
-5. Call `run(port)` to start the server
+2. `load("sinatra049.rb")`
+3. Subclass `Sinatra049` with your handlers
+4. Register routes with `app.get()` / `app.post()`
+5. Call `app.run()` to start the server
 
 ## API
 
 ### Routing
 
 ```ruby
-get("/path",        "handler_name")
-get("/users/:id",   "show_user")
-post("/submit",     "handle_form")
+app.get("/path",        "handler_name")
+app.get("/users/:id",   "show_user")
+app.post("/submit",     "handle_form")
 ```
 
-Routes map an HTTP method + path to a handler function name. Path segments prefixed with `:` become named parameters.
+Routes map an HTTP method + path to a handler method on your app class. Path segments prefixed with `:` become named parameters. Up to 5 named parameters per route (limited by `$1`..`$5` capture groups).
 
-Handlers are regular `def` functions that return an HTML string. They are called by name via `eval` (Ruby 0.49 has no blocks or procs).
+Handlers are dispatched via `apply()` -- the Ruby 0.49 ancestor of `send()`.
 
 ### Parameters
 
 ```ruby
-def show_user()
+def show_user
   id = params("id")
   html("User", h1("User #" + id))
 end
 ```
-
-Up to 5 named parameters per route are supported (limited by `$1`..`$5` capture groups).
 
 ### HTML helpers
 
 | Helper | Output |
 |---|---|
 | `html(title, body)` | Full HTML page with `<head>`, inline CSS, and footer |
-| `h1(text)` | `<h1>text</h1>` |
-| `h2(text)` | `<h2>text</h2>` |
-| `p(text)` | `<p>text</p>` |
-| `a(href, text)` | `<a href="href">text</a>` |
-| `ul(items_array)` | `<ul><li>...</li></ul>` from an array of strings |
+| `h1(text)`, `h2(text)` | Headings |
+| `p(text)` | Paragraph |
+| `a(href, text)` | Link |
+| `strong(text)`, `em(text)`, `code(text)` | Inline formatting |
+| `pre(text)` | Preformatted block |
+| `ul(items_array)` | Unordered list from an array of strings |
+| `nav(links_array)` | Navigation bar from an array of `a()` calls |
 
 ### 404 handling
 
-Any request that doesn't match a registered route gets an automatic 404 page.
+Any request that doesn't match a registered route gets an automatic styled 404 page.
 
-## Ruby 0.49 quirks
+## Ruby 0.49 features used
 
-This framework works around several limitations of Ruby 0.49:
+The framework uses idiomatic Ruby 0.49 throughout:
 
-- **No blocks/procs/lambdas.** Handlers are function names dispatched through `eval`.
-- **Constants use `%`** instead of uppercase (`%PORT`, not `PORT`).
-- **`sub`/`gsub` mutate in place.** Strings must be copied with `"" + str` to avoid side effects.
-- **`while 1`** instead of `while true` (`TRUE` is `%TRUE` in 0.49 and doesn't work bare).
-- **No `require`, only `load`.** And `load` needs parentheses or `/` gets parsed as regex.
-- **`TCPserver.open(port)`** is the built-in TCP server -- no `require 'socket'` needed.
-- **`.print`** on any object instead of `puts`.
+- **Classes** with `:` inheritance (`class MyApp : Sinatra049`), `init` instead of `initialize`, and explicit `self` return.
+- **Private methods** via `@` prefix (`def @match_route`, `def @send_response`) instead of `private`.
+- **`apply("method")`** for dynamic dispatch instead of `send(:method)`.
+- **`protect`/`ensure`** for connection cleanup instead of `begin`/`ensure`.
+- **`select([server])`** for connection handling.
+- **`while %TRUE`** -- `true` doesn't exist bare; `%TRUE` is the constant.
+- **`for item in array`** -- the primary iteration construct (blocks use `do func() using var; ... end` but can't be stored as objects).
+- **`TCPserver.open(port)`** -- built-in, no `require 'socket'` needed.
+- **`printf()`** for formatted output instead of `puts`.
+- **Constants** use `%` prefix (`%CRLF`, `%TRUE`).
+- **`sub`/`gsub`** mutate in place; strings are copied with `"" + str`.
 
 ## Files
 
 | File | Description |
 |---|---|
 | `sinatra049.rb` | The framework (load this in your app) |
-| `app.rb` | Example application with 4 routes |
+| `app.rb` | Example application with 5 routes including a Ruby 0.49 syntax guide |
+
+## See also
+
+- [sampersand/ruby-0.49](https://github.com/sampersand/ruby-0.49) -- Ruby 0.49 source code, examples, and syntax reference
+- [ancient_ruby gem](https://rubygems.org/gems/ancient_ruby) -- Cosmopolitan binary of Ruby 0.49
 
 ## License
 
