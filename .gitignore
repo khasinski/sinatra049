@@ -1,3 +1,5 @@
 *.log
 *.com
 .DS_Store
+captain-definition
+deploy.tar

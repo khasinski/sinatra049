@@ -10,6 +10,7 @@
 # See app.rb for a full example.
 
 %CRLF = "\r\n"
+%CSS = "body{font-family:Georgia,serif;max-width:660px;margin:40px auto;padding:0 20px;color:#222;line-height:1.6}h1{color:#c41;border-bottom:2px solid #c41;padding-bottom:8px}h2{color:#333}a{color:#c41}code{background:#f4f4f4;padding:2px 6px;font-size:90%}pre{background:#f4f4f4;padding:12px;overflow-x:auto}nav{margin:20px 0}nav a{margin-right:16px}.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ddd;color:#999;font-size:85%}"
 
 class Sinatra049
   def Sinatra049.new(port)
@@ -19,9 +20,9 @@ class Sinatra049
   def init(port)
     @port = port
     @route_methods  = []
-    @route_patterns = []
     @route_handlers = []
     @route_params   = []
+    @route_paths    = []
     @route_count    = 0
     @params         = {}
     self
@@ -38,53 +39,42 @@ class Sinatra049
   end
 
   def @add_route(method, path, handler)
+    # Extract param names from path segments using split
     param_names = []
-    tmp = "" + path
-    while tmp =~ /:([a-z_]+)/
-      param_names.push($1)
-      tmp.sub(":([a-z_]+)", "DONE")
+    parts = path.split("/")
+    for part in parts
+      if part.length > 0 && part[0] == ?:
+        param_names.push(part[1, part.length - 1])
+      end
     end
 
-    regex_str = "" + path
-    regex_str.gsub(":([a-z_]+)", "([^/]+)")
-    regex_str = "^" + regex_str + "$"
-    regex_str.gsub("/", "\\/")
-
     @route_methods[@route_count]  = method
-    @route_patterns[@route_count] = regex_str
     @route_handlers[@route_count] = handler
     @route_params[@route_count]   = param_names
+    @route_paths[@route_count]    = path
     @route_count = @route_count + 1
   end
 
   # --- Request state ---
 
   def params(key)
-    @params[key]
+    $sinatra_params[key]
   end
 
   # --- Route matching ---
 
   def @match_route(method, path)
+    $sinatra_params = {}
+    path_parts = path.split("/")
+    plen = path_parts.length
     i = 0
     while i < @route_count
       if @route_methods[i] == method
-        pattern = @route_patterns[i]
-        if eval("path =~ /" + pattern + "/")
-          @params = {}
-          names = @route_params[i]
-          captures = []
-          if $1 then captures.push($1) end
-          if $2 then captures.push($2) end
-          if $3 then captures.push($3) end
-          if $4 then captures.push($4) end
-          if $5 then captures.push($5) end
-          j = 0
-          while j < names.length
-            @params[names[j]] = captures[j]
-            j = j + 1
+        route_parts = @route_paths[i].split("/")
+        if plen == route_parts.length
+          if @try_match(path_parts, route_parts, @route_params[i])
+            return @route_handlers[i]
           end
-          return @route_handlers[i]
         end
       end
       i = i + 1
@@ -92,15 +82,30 @@ class Sinatra049
     return nil
   end
 
+  def @try_match(path_parts, route_parts, names)
+    result = {}
+    j = 0
+    pi = 0
+    while j < route_parts.length
+      rp = route_parts[j]
+      pp = path_parts[j]
+      if rp.length > 0 && rp[0] == ?:
+        result[names[pi]] = pp
+        pi = pi + 1
+      else
+        if rp != pp then return nil end
+      end
+      j = j + 1
+    end
+    $sinatra_params = result
+    return %TRUE
+  end
+
   # --- HTTP plumbing ---
 
   def @send_response(client, status, body)
-    client.write("HTTP/1.0 " + status + %CRLF)
-    client.write("Content-Type: text/html" + %CRLF)
-    client.write("Content-Length: " + body.length.to_s + %CRLF)
-    client.write("Connection: close" + %CRLF)
-    client.write(%CRLF)
-    client.write(body)
+    resp = "HTTP/1.0 " + status + "\r\nContent-Type: text/html\r\nContent-Length: " + body.length.to_s + "\r\nConnection: close\r\n\r\n" + body
+    client.write(resp)
   end
 
   # --- Server ---
@@ -111,9 +116,8 @@ class Sinatra049
 
     protect
       while %TRUE
-        ns = select([server])
-        if ns.is_nil then continue end
-        client = ns[0][0].accept
+        client = server.accept
+        client.sync = %TRUE
 
         protect
           line = client.gets
@@ -125,7 +129,7 @@ class Sinatra049
 
             printf("  %s %s\n", method, path)
 
-            # Consume headers
+            # Consume all headers before responding
             while %TRUE
               header = client.gets
               if header
@@ -147,7 +151,9 @@ class Sinatra049
             end
           end
         ensure
+          client.flush
           client.close
+          client = nil
         end
       end
     ensure
@@ -205,22 +211,7 @@ class Sinatra049
   end
 
   def html(title, body)
-    "<html>" + %CRLF +
-    "<head><title>" + title + " - sinatra049</title>" +
-    "<style>" +
-    "body{font-family:Georgia,serif;max-width:660px;margin:40px auto;padding:0 20px;color:#222;line-height:1.6}" +
-    "h1{color:#c41;border-bottom:2px solid #c41;padding-bottom:8px}" +
-    "h2{color:#333}" +
-    "a{color:#c41}" +
-    "code{background:#f4f4f4;padding:2px 6px;font-size:90%}" +
-    "pre{background:#f4f4f4;padding:12px;overflow-x:auto}" +
-    "nav{margin:20px 0}" +
-    "nav a{margin-right:16px}" +
-    ".footer{margin-top:40px;padding-top:12px;border-top:1px solid #ddd;color:#999;font-size:85%}" +
-    "</style></head>" + %CRLF +
-    "<body>" + body + %CRLF +
-    "<div class=\"footer\"><a href=\"https://github.com/khasinski/sinatra049\">sinatra049</a> / Ruby 0.49 (18 Jul 1994)</div>" +
-    "</body></html>" + %CRLF
+    "<html><head><title>" + title + " - sinatra049</title><style>" + %CSS + "</style></head><body>" + body + "<div class=\"footer\"><a href=\"https://github.com/khasinski/sinatra049\">sinatra049</a> / Ruby 0.49 (18 Jul 1994)</div></body></html>"
   end
 
   def nav(links)

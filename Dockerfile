@@ -15,7 +15,8 @@ RUN curl -sL https://rubygems.org/downloads/ancient_ruby-0.49.0.gem -o /tmp/gem.
  && apk del curl
 
 WORKDIR /app
-COPY sinatra049.rb app.rb ./
+COPY sinatra049.rb app.rb start.sh ./
+RUN chmod +x start.sh
 
 EXPOSE 8049
-CMD ["ruby-0.49", "app.rb"]
+CMD ["./start.sh"]
