@@ -219,7 +219,7 @@ class Sinatra049
     ".footer{margin-top:40px;padding-top:12px;border-top:1px solid #ddd;color:#999;font-size:85%}" +
     "</style></head>" + %CRLF +
     "<body>" + body + %CRLF +
-    "<div class=\"footer\">sinatra049 / Ruby 0.49 (18 Jul 1994)</div>" +
+    "<div class=\"footer\"><a href=\"https://github.com/khasinski/sinatra049\">sinatra049</a> / Ruby 0.49 (18 Jul 1994)</div>" +
     "</body></html>" + %CRLF
   end
 
