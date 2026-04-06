@@ -10,16 +10,16 @@ class MyApp : Sinatra049
 
   def index
     body = h1("sinatra049") +
-      p("This page is being served by " + strong("Ruby 0.49") + " -- the oldest surviving version of Ruby, released by Yukihiro " + em("Matz") + " Matsumoto on 18 July 1994.") +
-      p("sinatra049 is a small Sinatra-style web framework built entirely within the constraints of this 30-year-old language. No modern Ruby, no C extensions, no cheating -- just " + code("TCPserver.open()") + ", classes with " + code(":") + " inheritance, and " + code("apply()") + " for dispatch.") +
+      p("This page is being served by " + strong("Ruby 0.49") + ", the oldest surviving version of Ruby, released by Yukihiro " + em("matz") + " Matsumoto on 18 July 1994.") +
+      p("sinatra049 is a small Sinatra-style web framework built entirely within the constraints of this 30-year-old language. No modern Ruby, no C extensions, no cheating. Just " + code("TCPserver.open()") + ", classes with " + code(":") + " inheritance, and " + code("apply()") + " for dispatch.") +
       h2("Try it") +
       p(a("/hello/matz", "Hello Matz") + " | " + a("/hello/world", "Hello World") + " | " + a("/users/42", "User 42") + " | " + a("/users/1994", "User 1994") + " | " + a("/about", "About")) +
       h2("Links") +
-      p(a("https://github.com/khasinski/sinatra049", "sinatra049 on GitHub") + " -- the framework source code") +
-      p(a("https://github.com/sampersand/ruby-0.49", "sampersand/ruby-0.49") + " -- Ruby 0.49 source, examples, and syntax reference") +
-      p(a("https://rubygems.org/gems/ancient_ruby", "ancient_ruby gem") + " -- portable Ruby 0.49 binary you can install today") +
+      p(a("https://github.com/khasinski/sinatra049", "sinatra049 on GitHub") + " (framework source)") +
+      p(a("https://github.com/sampersand/ruby-0.49", "sampersand/ruby-0.49") + " (source, examples, syntax reference)") +
+      p(a("https://rubygems.org/gems/ancient_ruby", "ancient_ruby gem") + " (portable Ruby 0.49 binary)") +
       h2("Thanks") +
-      p("To " + strong("Matz") + " for creating Ruby in 1993 and sharing it with the world. And to " + strong("sampersand") + " for preserving Ruby 0.49, documenting its quirks, and building the Cosmopolitan binary that makes this possible.")
+      p("To " + strong("matz") + " for creating Ruby in 1993 and sharing it with the world. And to " + strong("sampersand") + " for preserving Ruby 0.49 and documenting its quirks.")
     html("Home", body)
   end
 
