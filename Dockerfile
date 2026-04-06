@@ -14,9 +14,11 @@ RUN curl -sL https://rubygems.org/downloads/ancient_ruby-0.49.0.gem -o /tmp/gem.
  && chmod +x /usr/local/bin/ruby-0.49 \
  && apk del curl
 
+# Install wget for healthcheck (tiny, already in busybox)
 WORKDIR /app
-COPY sinatra049.rb app.rb start.sh ./
-RUN chmod +x start.sh
+COPY sinatra049.rb app.rb ./
 
 EXPOSE 8049
-CMD ["./start.sh"]
+HEALTHCHECK --interval=5s --timeout=3s --retries=2 --start-period=10s \
+  CMD wget -q -O /dev/null http://127.0.0.1:8049/ || exit 1
+CMD ["ruby-0.49", "app.rb"]
